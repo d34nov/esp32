@@ -1,10 +1,12 @@
-The project requires PlatformIO with Espressif 32 platform installed
-The board used is ESP32-C3 ( generic There is no such board in the PIO library)
-All other settings are in platformio.ini file
-The firmware opens simultaneously WiFi access point
-and BLE device
+The project requires PlatformIO with Espressif 32 platform installed.
 
- It also launches WebServer that serves UI html page WebPage.h
+The board used is ESP32-C3 ( generic There is no such board in the PIO library).
+
+All other settings are in platformio.ini file.
+
+The firmware opens simultaneously WiFi access point and BLE device.
+
+It also launches WebServer that serves UI html page WebPage.h
  
 For connecting via WiFi:
 On remote device connect to WiFi access point: "ESP32-C3-AP"
