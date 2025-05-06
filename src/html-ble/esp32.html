@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP32-C3 LED Control via BLE</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 10px; font-size: 16px; }
+    #status { font-weight: bold; margin-top: 15px; }
+  </style>
+  <script>
+    let device, server, service, characteristic;
+
+    const SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb";  // Battery Service
+    const CHARACTERISTIC_UUID = "00002a19-0000-1000-8000-00805f9b34fb";  // Battery Level
+
+    async function connectBLE() {
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }]
+        });
+
+        logStatus("Connecting...");
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+
+        server = await device.gatt.connect();
+        service = await server.getPrimaryService(SERVICE_UUID);
+        characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        logStatus("✅ Connected to " + device.name);
+      } catch (error) {
+        logStatus("❌ " + error);
+      }
+    }
+
+    function onDisconnected() {
+      logStatus("⚠️ Disconnected. Reload page to reconnect.");
+    }
+
+    async function turnOn() {
+      if (!characteristic) return logStatus("❌ Not connected.");
+      await characteristic.writeValue(new TextEncoder().encode("ON"));
+      logStatus("💡 LED ON");
+    }
+
+    async function turnOff() {
+      if (!characteristic) return logStatus("❌ Not connected.");
+      await characteristic.writeValue(new TextEncoder().encode("OFF"));
+      logStatus("❌ LED OFF");
+    }
+
+    function logStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
+  </script>
+</head>
+<body>
+  <h2>🔌 ESP32-C3 BLE LED Control</h2>
+  <button onclick="connectBLE()">🔗 Connect to ESP32-C3</button>
+
+  <h3>Control</h3>
+  <button onclick="turnOn()">💡 Turn ON</button>
+  <button onclick="turnOff()">❌ Turn OFF</button>
+
+  <p id="status">Status: Not connected</p>
+</body>
+</html>
