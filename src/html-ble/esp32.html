@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESP32-C3 LED Control via BLE</title>
+  <title>ESP32-C3 LED & Button via BLE</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     button { margin: 5px; padding: 10px; font-size: 16px; }
-    #status { font-weight: bold; margin-top: 15px; }
+    #status, #btnStatus { font-weight: bold; margin-top: 10px; }
   </style>
   <script>
-    let device, server, service, characteristic;
+    let device, server, service, ledChar, buttonChar;
 
-    const SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb";  // Battery Service
-    const CHARACTERISTIC_UUID = "00002a19-0000-1000-8000-00805f9b34fb";  // Battery Level
+    const SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb";
+    const LED_CHAR_UUID = "00002a19-0000-1000-8000-00805f9b34fb";
+    const BTN_CHAR_UUID = "00002a1a-0000-1000-8000-00805f9b34fb";
 
     async function connectBLE() {
       try {
@@ -25,11 +26,16 @@
 
         server = await device.gatt.connect();
         service = await server.getPrimaryService(SERVICE_UUID);
-        characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        ledChar = await service.getCharacteristic(LED_CHAR_UUID);
+        buttonChar = await service.getCharacteristic(BTN_CHAR_UUID);
+
+        await buttonChar.startNotifications();
+        buttonChar.addEventListener('characteristicvaluechanged', handleButtonChange);
 
         logStatus("✅ Connected to " + device.name);
-      } catch (error) {
-        logStatus("❌ " + error);
+      } catch (err) {
+        logStatus("❌ " + err);
       }
     }
 
@@ -38,15 +44,20 @@
     }
 
     async function turnOn() {
-      if (!characteristic) return logStatus("❌ Not connected.");
-      await characteristic.writeValue(new TextEncoder().encode("ON"));
+      if (!ledChar) return logStatus("❌ Not connected.");
+      await ledChar.writeValue(new TextEncoder().encode("ON"));
       logStatus("💡 LED ON");
     }
 
     async function turnOff() {
-      if (!characteristic) return logStatus("❌ Not connected.");
-      await characteristic.writeValue(new TextEncoder().encode("OFF"));
+      if (!ledChar) return logStatus("❌ Not connected.");
+      await ledChar.writeValue(new TextEncoder().encode("OFF"));
       logStatus("❌ LED OFF");
+    }
+
+    function handleButtonChange(event) {
+      const value = event.target.value.getUint8(0);
+      document.getElementById("btnStatus").textContent = value === 0 ? "Pressed" : "Released";
     }
 
     function logStatus(msg) {
@@ -55,13 +66,16 @@
   </script>
 </head>
 <body>
-  <h2>🔌 ESP32-C3 BLE LED Control</h2>
+  <h2>🔌 ESP32-C3 BLE LED + Button</h2>
   <button onclick="connectBLE()">🔗 Connect to ESP32-C3</button>
 
-  <h3>Control</h3>
+  <h3>LED Control</h3>
   <button onclick="turnOn()">💡 Turn ON</button>
   <button onclick="turnOff()">❌ Turn OFF</button>
-
   <p id="status">Status: Not connected</p>
+
+  <hr>
+
+  <h3>Button Status: <span id="btnStatus">Unknown</span></h3>
 </body>
 </html>
